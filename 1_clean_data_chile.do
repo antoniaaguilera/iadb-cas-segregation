@@ -1,7 +1,7 @@
 /*
 ================================================================================
 FECHA CREACION: 2022_09_09 // akac
-ULTIMA MODIFICACION: 2022_10_24 // akac
+ULTIMA MODIFICACION: 2022_11_03 // akac
 --------------------------------------------------------------------------------
 PROYECTO: Paper Segregación CCAS
 DESCRIPCIÓN: Este do-file limpia las bases originales y genera bases intermedias 
@@ -51,14 +51,19 @@ local sae_2019 "$pathData/inputs/SAE/SAE_2019"
 forvalues year = 2016/2020 {
   * --- matricula --- *
   import delimited "`mat_`year''", clear
- 
-  keep rbd cod_reg_rbd
+
+  keep rbd cod_reg_rbd cod_depe agno
   duplicates drop rbd, force 
- 
+  * --- fix cod_depe
+  gen dependencia     = 1 if inlist(cod_depe, 1, 2, 6) //estatal
+  replace dependencia = 2 if inlist(cod_depe, 3, 5) //subvencionado
+  replace dependencia = 3 if inlist(cod_depe, 4) //pagado
+   
   tempfile region_`year'
   save `region_`year'', replace 
 }
 
+* --- fix cod_depe
 use `region_2016', clear
 merge 1:1 rbd using `region_2017'
 drop _merge
@@ -71,7 +76,7 @@ drop _merge
 
 duplicates report rbd 
 save "$pathData/intermediates/rbd_region.dta", replace 
-
+ 
 
 * --------------------------------
 * MATRICULA + PRIORITARIOS
@@ -88,7 +93,7 @@ forvalues year = 2017/2020 {
   //save "$pathData/intermediates/matricula_`year'.dta", replace
   tempfile mat_`year'
   save `mat_`year'', replace 
- 
+
   * --- rendimiento --- *
   import delimited "`rend_`year''", clear
   keep if cod_ense  == 110 & cod_grado == 1
@@ -117,34 +122,35 @@ forvalues year = 2017/2020 {
   keep mrun rbd_sitfinal cod_grado cod_ense
 
   gen year_application = `year' - 1
- 
+
   merge 1:1 mrun using `mat_`year'' //"$pathData/intermediates/matricula_`year'.dta"
   keep if _merge == 3
   drop _merge 
- 
+
   //save "$pathData/intermediates/rendmat_`year'.dta", replace
   tempfile rendmat_`year'
   save `rendmat_`year'', replace 
- 
-  local year_prio = `year'-1
- 
+
   * --- prioritarios --- *
+  local year_prio = `year'-1
   import delimited "`prio_`year_prio''", clear
-  keep agno mrun convenio_sep grado_sep prioritario_alu preferente_alu ben_sep criterio_sep cod_ense cod_grado ee_gratuito
+ 
+  destring cod_reg_rbd, replace 
+  keep agno mrun convenio_sep grado_sep prioritario_alu preferente_alu ben_sep criterio_sep cod_ense cod_grado ee_gratuito cod_reg_rbd
   destring cod_ense cod_grado, replace
   keep if cod_ense  == 10 & cod_grado == 5
 
   gen year_application = `year' - 1
 
   merge 1:1 mrun using `rendmat_`year''
-  keep if _merge == 3
-  drop _merge 
- 
+  *keep if _merge == 3  
+  gen origin = "matricula"        if _m == 2
+  replace origin = "prioritario"  if _m == 1
+  replace origin = "matricula+prioritario" if _m == 3
+  drop _merge
   save "$pathData/intermediates/rendmat`year'_prio`year_prio'.dta", replace 
-
 }
-
-
+stop 
 * --------------------------------
 * SAE
 * --------------------------------
@@ -158,6 +164,7 @@ forvalues year = 2016/2019 {
 
  * --- SAE - APPLICANTS - REGULAR --- *
   import delimited "`sae_`year''/B1_Postulantes_etapa_regular_`year'_Admision_`admission_year'_PUBL.csv", clear
+  
   cap rename nivel cod_nivel
   keep if cod_nivel== 1
 
@@ -201,6 +208,7 @@ forvalues year = 2016/2019 {
   cap rename nivel cod_nivel
   keep if cod_nivel== 1
   keep mrun rbd
+  gen etapa = "regular"
  
   tempfile sae_regular_postulaciones_`year'
   save `sae_regular_postulaciones_`year'', replace
@@ -210,7 +218,9 @@ forvalues year = 2016/2019 {
   cap rename nivel cod_nivel
   keep if cod_nivel== 1
   keep mrun rbd
-
+ 
+  gen etapa = "complementaria"
+ 
   append using `sae_regular_postulaciones_`year''
 
   duplicates report mrun
@@ -230,6 +240,7 @@ forvalues year = 2016/2019 {
  * SCHOOLS - REGULAR
  * -----------------
 	import delimited "`sae_`year''/A1_Oferta_Establecimientos_etapa_regular_`year'_Admision_`admission_year'.csv", clear
+	 
 	cap rename nivel cod_nivel
 	keep if cod_nivel == 1
 	collapse (firstnm) cod_nivel con_copago lat lon (sum) cupos_totales vacantes , by(rbd)			 
@@ -339,7 +350,7 @@ forvalues year = 2016/2019 {
 	* espera, se le asigna y acepta
 	replace rbd_final       = rbd_admitido_post_resp_reg if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 1
 	* espera, se le asigna y rechaza
-	replace rbd_final       = "sale-del-proceso"        if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 2
+	replace rbd_final       = "sale-del-proceso"         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 2
 	replace rbd_final       = rbd_admitido_comp          if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 3
 	replace asignado_comp   = 1                          if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 3
 	* obligado a esperar y sin respuesta post lista
