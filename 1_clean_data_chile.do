@@ -132,7 +132,7 @@ forvalues year = 2017/2020 {
   save `rendmat_`year'', replace 
 
   * --- prioritarios --- *
-  local year_prio = `year'-1
+  local year_prio = `year' //-1
   import delimited "`prio_`year_prio''", clear
  
   destring cod_reg_rbd, replace 
@@ -150,7 +150,7 @@ forvalues year = 2017/2020 {
   drop _merge
   save "$pathData/intermediates/rendmat`year'_prio`year_prio'.dta", replace 
 }
-stop 
+
 * --------------------------------
 * SAE
 * --------------------------------

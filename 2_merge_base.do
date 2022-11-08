@@ -37,6 +37,23 @@ save "$pathData/outputs/sae_oferta_final.dta", replace
 * --------------------------------------------------------------------------------
 * AGGREGATED APPLICATIONS DATA WITH STUDENT REGION
 * --------------------------------------------------------------------------------
+use "$pathData/intermediates/sae_applicants_2016.dta", clear
+append using "$pathData/intermediates/sae_applicants_2017.dta"
+append using "$pathData/intermediates/sae_applicants_2018.dta"
+append using "$pathData/intermediates/sae_applicants_2019.dta"
+
+merge m:1 rbd using "$pathData/intermediates/rbd_region.dta"
+keep if _merge == 3 
+drop _merge
+
+replace dependencia = 2 if rbd == 20567 & cod_depe == 4
+drop agno
+
+save "$pathData/outputs/sae_applications_final.dta", replace 
+
+* --------------------------------------------------------------------------------
+* AGGREGATED APPLICATIONS DATA WITH STUDENT REGION
+* --------------------------------------------------------------------------------
 use "$pathData/intermediates/sae_applications_2016.dta", clear
 append using "$pathData/intermediates/sae_applications_2017.dta"
 append using "$pathData/intermediates/sae_applications_2018.dta"
@@ -174,7 +191,7 @@ gen years_to_event = 0       if cod_reg_rbd == 12 & year_application == 2016
 replace years_to_event = 1   if cod_reg_rbd == 12 & year_application == 2017
 replace years_to_event = 2   if cod_reg_rbd == 12 & year_application == 2018
 replace years_to_event = 3   if cod_reg_rbd == 12 & year_application == 2019 
-gen group = 1
+gen group = 1 				 if cod_reg_rbd == 12
 
 // fase 2: cod_reg 1, 4, 6, 10
 replace years_to_event = -1  if inlist(cod_reg_rbd, 1, 4, 6, 10) & year_application == 2016
