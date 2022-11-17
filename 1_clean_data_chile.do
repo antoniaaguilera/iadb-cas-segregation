@@ -48,35 +48,35 @@ local sae_2019 "$pathData/inputs/SAE/SAE_2019"
 * -----------------------------------------
 * GET STOCK OF SCHOOLS PER YEAR WITH REGION 
 * -----------------------------------------
-forvalues year = 2016/2020 {
-  * --- matricula --- *
-  import delimited "`mat_`year''", clear
+// forvalues year = 2016/2020 {
+//   * --- matricula --- *
+//   import delimited "`mat_`year''", clear
+//
+//   keep rbd cod_reg_rbd cod_depe agno
+//   duplicates drop rbd, force 
+//   * --- fix cod_depe
+//   gen dependencia     = 1 if inlist(cod_depe, 1, 2, 6) //estatal
+//   replace dependencia = 2 if inlist(cod_depe, 3, 5) //subvencionado
+//   replace dependencia = 3 if inlist(cod_depe, 4) //pagado
+//  
+//   tempfile region_`year'
+//   save `region_`year'', replace 
+// }
+//
+// * --- fix cod_depe
+// use `region_2016', clear
+// merge 1:1 rbd using `region_2017'
+// drop _merge
+// merge 1:1 rbd using `region_2018'
+// drop _merge
+// merge 1:1 rbd using `region_2019'
+// drop _merge
+// merge 1:1 rbd using `region_2020'
+// drop _merge 
+//
+// duplicates report rbd 
+// save "$pathData/intermediates/rbd_region.dta", replace 
 
-  keep rbd cod_reg_rbd cod_depe agno
-  duplicates drop rbd, force 
-  * --- fix cod_depe
-  gen dependencia     = 1 if inlist(cod_depe, 1, 2, 6) //estatal
-  replace dependencia = 2 if inlist(cod_depe, 3, 5) //subvencionado
-  replace dependencia = 3 if inlist(cod_depe, 4) //pagado
-   
-  tempfile region_`year'
-  save `region_`year'', replace 
-}
-
-* --- fix cod_depe
-use `region_2016', clear
-merge 1:1 rbd using `region_2017'
-drop _merge
-merge 1:1 rbd using `region_2018'
-drop _merge
-merge 1:1 rbd using `region_2019'
-drop _merge
-merge 1:1 rbd using `region_2020'
-drop _merge 
-
-duplicates report rbd 
-save "$pathData/intermediates/rbd_region.dta", replace 
- 
 
 * --------------------------------
 * MATRICULA + PRIORITARIOS
@@ -86,63 +86,64 @@ forvalues year = 2017/2020 {
   * --- matricula --- *
   import delimited "`mat_`year''", clear
   keep rbd rural_rbd nom_com_rbd nom_com_alu mrun gen_alu fec_nac_alu let_cur cod_reg_rbd cod_jor cod_grado2 cod_grado cod_espe cod_ense3 cod_ense2 cod_ense cod_depe2 cod_depe cod_com_rbd agno cod_com_alu
-  keep if cod_ense  == 110 & cod_grado == 1
-
+  keep if cod_ense  == 10 & cod_grado == 4
+  *keep if cod_ense  == 110 & cod_grado == 1
   gen year_application = `year' - 1
 
   //save "$pathData/intermediates/matricula_`year'.dta", replace
   tempfile mat_`year'
   save `mat_`year'', replace 
 
-  * --- rendimiento --- *
-  import delimited "`rend_`year''", clear
-  keep if cod_ense  == 110 & cod_grado == 1
-  duplicates tag mrun, g(dup_mrun)
-  keep mrun sit_fin_r rbd dup_mrun cod_ense cod_grado
-
-  gen sitfin=1
-  replace sitfin=2 if sit_fin_r=="Y"
-  replace sitfin=3 if sit_fin_r=="R"
-  replace sitfin=4 if sit_fin_r=="P"
-  replace sitfin=. if sit_fin_r==""
-  label define Sitfin 1 "Trasladado" 2 "Retirado" 3 "Reprobado" 4 "Promovido" 
-  label values sitfin Sitfin
-  bys mrun: egen sitfinal=max(sitfin)
-  gen aux=rbd if sitfinal==sitfin
-  bys mrun: egen rbd_sitfinal=max(aux)
-
-  * - eliminar ruts duplicados, solo mantengo último dup 
-  drop if dup_mrun>0 & sitfin<3
-  duplicates tag mrun, gen(dup2)
-  drop if dup2>0
-  drop dup2 
-	
-  order mrun *
-  sort mrun 
-  keep mrun rbd_sitfinal cod_grado cod_ense
-
-  gen year_application = `year' - 1
-
-  merge 1:1 mrun using `mat_`year'' //"$pathData/intermediates/matricula_`year'.dta"
-  keep if _merge == 3
-  drop _merge 
-
-  //save "$pathData/intermediates/rendmat_`year'.dta", replace
-  tempfile rendmat_`year'
-  save `rendmat_`year'', replace 
+//   * --- rendimiento --- *
+//   import delimited "`rend_`year''", clear
+//   keep if cod_ense  == 10 & cod_grado == 4
+//   *keep if cod_ense  == 110 & cod_grado == 1
+//   duplicates tag mrun, g(dup_mrun)
+//   keep mrun sit_fin_r rbd dup_mrun cod_ense cod_grado
+//
+//   gen sitfin=1
+//   replace sitfin=2 if sit_fin_r=="Y"
+//   replace sitfin=3 if sit_fin_r=="R"
+//   replace sitfin=4 if sit_fin_r=="P"
+//   replace sitfin=. if sit_fin_r==""
+//   label define Sitfin 1 "Trasladado" 2 "Retirado" 3 "Reprobado" 4 "Promovido" 
+//   label values sitfin Sitfin
+//   bys mrun: egen sitfinal=max(sitfin)
+//   gen aux=rbd if sitfinal==sitfin
+//   bys mrun: egen rbd_sitfinal=max(aux)
+//
+//   * - eliminar ruts duplicados, solo mantengo último dup 
+//   drop if dup_mrun>0 & sitfin<3
+//   duplicates tag mrun, gen(dup2)
+//   drop if dup2>0
+//   drop dup2 
+//	
+//   order mrun *
+//   sort mrun 
+//   keep mrun rbd_sitfinal cod_grado cod_ense
+//
+//   gen year_application = `year' - 1
+//
+//   merge 1:1 mrun using `mat_`year'' //"$pathData/intermediates/matricula_`year'.dta"
+//   keep if _merge == 3
+//   drop _merge 
+//
+//   //save "$pathData/intermediates/rendmat_`year'.dta", replace
+//   tempfile rendmat_`year'
+//   save `rendmat_`year'', replace 
 
   * --- prioritarios --- *
   local year_prio = `year' //-1
   import delimited "`prio_`year_prio''", clear
- 
-  destring cod_reg_rbd, replace 
+
+  destring cod_reg_rbd cod_ense cod_grado, replace 
   keep agno mrun convenio_sep grado_sep prioritario_alu preferente_alu ben_sep criterio_sep cod_ense cod_grado ee_gratuito cod_reg_rbd
-  destring cod_ense cod_grado, replace
-  keep if cod_ense  == 10 & cod_grado == 5
+  keep if cod_ense  == 10 & cod_grado == 4
+  *keep if cod_ense  == 110 & cod_grado == 1
 
   gen year_application = `year' - 1
 
-  merge 1:1 mrun using `rendmat_`year''
+  merge 1:1 mrun using `mat_`year''
   *keep if _merge == 3  
   gen origin = "matricula"        if _m == 2
   replace origin = "prioritario"  if _m == 1
@@ -166,7 +167,7 @@ forvalues year = 2016/2019 {
   import delimited "`sae_`year''/B1_Postulantes_etapa_regular_`year'_Admision_`admission_year'_PUBL.csv", clear
   
   cap rename nivel cod_nivel
-  keep if cod_nivel== 1
+  *keep if cod_nivel== 1
 
   tempfile sae_regular_postulantes_`year'
   save `sae_regular_postulantes_`year'', replace
@@ -174,7 +175,7 @@ forvalues year = 2016/2019 {
   * --- SAE - APPLICANTS - COMPLEMENTARIO --- *
   import delimited "`sae_`year''/B2_Postulantes_etapa_complementaria_`year'_Admision_`admission_year'_PUBL.csv", clear
   cap rename nivel cod_nivel
-  keep if cod_nivel== 1
+  *keep if cod_nivel== 1
 
   merge 1:1 mrun using `sae_regular_postulantes_`year''
   gen etapa = "reg"           if _m == 2
@@ -194,9 +195,11 @@ forvalues year = 2016/2019 {
   }
 
   destring lat_con_error lon_con_error, replace
+  save "$pathData/intermediates/sae_applicants_`year'_allgrades.dta", replace 
+  keep if cod_nivel == -1
   save "$pathData/intermediates/sae_applicants_`year'.dta", replace 
 }
-
+ 
 * -----------------
 * APPLICATIONS
 * -----------------
@@ -206,8 +209,8 @@ forvalues year = 2016/2019 {
  * --- SAE - APPLICATIONS - REGULAR --- *
   import delimited "`sae_`year''/C1_Postulaciones_etapa_regular_`year'_Admision_`admission_year'_PUBL.csv", clear
   cap rename nivel cod_nivel
-  keep if cod_nivel== 1
-  keep mrun rbd
+  keep if cod_nivel == -1
+  keep mrun rbd cod_nivel
   gen etapa = "regular"
  
   tempfile sae_regular_postulaciones_`year'
@@ -216,8 +219,8 @@ forvalues year = 2016/2019 {
   * --- SAE - APPLICATIONS - COMPLEMENTARIO --- *
   import delimited "`sae_`year''/C2_Postulaciones_etapa_complementaria_`year'_Admision_`admission_year'_PUBL.csv", clear
   cap rename nivel cod_nivel
-  keep if cod_nivel== 1
-  keep mrun rbd
+  keep if cod_nivel == -1
+  keep mrun rbd cod_nivel
  
   gen etapa = "complementaria"
  
@@ -242,7 +245,7 @@ forvalues year = 2016/2019 {
 	import delimited "`sae_`year''/A1_Oferta_Establecimientos_etapa_regular_`year'_Admision_`admission_year'.csv", clear
 	 
 	cap rename nivel cod_nivel
-	keep if cod_nivel == 1
+	keep if cod_nivel == -1
 	collapse (firstnm) cod_nivel con_copago lat lon (sum) cupos_totales vacantes , by(rbd)			 
 	
 	tempfile sae_regular_oferta_`year'
@@ -253,7 +256,7 @@ forvalues year = 2016/2019 {
 * ------------------------
 	import delimited "`sae_`year''/A2_Oferta_Establecimientos_etapa_complementaria_`year'_Admision_`admission_year'.csv", clear
 	cap rename nivel cod_nivel
-	keep if cod_nivel == 1
+	keep if cod_nivel == -1
 	collapse (firstnm) cod_nivel con_copago lat lon (sum) cupos_totales vacantes , by(rbd)			 				 
  
     merge 1:1 rbd using `sae_regular_oferta_`year''
@@ -288,7 +291,7 @@ forvalues year = 2016/2019 {
 * --------------------
 	import delimited "$pathData/inputs/SAE/SAE_`year'/D1_Resultados_etapa_regular_`year'_Admision_`admission_year'_PUBL.csv", clear charset(utf-8)
 	cap rename nivel cod_nivel
-	keep if cod_nivel == 1 
+	keep if cod_nivel == -1 
 	cap rename respuesta_postulante_post_lista_ respuesta_post_lista
 	cap rename * *_reg
 	rename mrun_reg mrun
@@ -303,7 +306,7 @@ forvalues year = 2016/2019 {
 	rename * *_comp
 	rename mrun_comp mrun
 	cap rename nivel cod_nivel
-	keep if cod_nivel == 1 
+	keep if cod_nivel == -1 
 
 	merge 1:1 mrun using `sae_regular_resultados'
 	

@@ -18,6 +18,67 @@ global pathTables "$pathMain/tables"
  
 set scheme cblind1
 * ----------------------------------------
+* APPLICATION GRADE
+* ----------------------------------------
+// use "$pathData/outputs/sae_applicants_final.dta", clear 
+//
+// collapse (count) mrun, by(year_application cod_nivel)
+//
+// set obs 57
+// replace cod_nivel = 2 in 48
+// replace cod_nivel = 3 in 49
+// replace cod_nivel = 4 in 50
+// replace cod_nivel = 5 in 51
+// replace cod_nivel = 6 in 52
+// replace cod_nivel = 8 in 53
+// replace cod_nivel = 9 in 54
+// replace cod_nivel = 10 in 55
+// replace cod_nivel = 11 in 56
+// replace cod_nivel = 12 in 57
+// replace year_application = 2016 if _n>=48
+// replace mrun = 0 if _n>=48
+//
+// gen nivel_label = "PreK"        if cod_nivel == -1
+// replace nivel_label = "Kinder"  if cod_nivel == 0
+// replace nivel_label = "1º"  if cod_nivel == 1
+// replace nivel_label = "2º"  if cod_nivel == 2
+// replace nivel_label = "3º"  if cod_nivel == 3
+// replace nivel_label = "4º"  if cod_nivel == 4
+// replace nivel_label = "5º"  if cod_nivel == 5
+// replace nivel_label = "6º"  if cod_nivel == 6
+// replace nivel_label = "7º"  if cod_nivel == 7
+// replace nivel_label = "8º"  if cod_nivel == 8
+// replace nivel_label = "Iº"  if cod_nivel == 9
+// replace nivel_label = "IIº"  if cod_nivel == 10
+// replace nivel_label = "IIIº"  if cod_nivel == 11
+// replace nivel_label = "IVº"  if cod_nivel == 12 
+//
+// sort year_application cod_nivel
+// bys year_application: egen total = sum(mrun)
+// replace mrun = round(mrun/total*100, 0.1)
+//
+// gr hbar mrun if year_application == 2016 , over(nivel_label, sort(1) descending) asyvars showyvars ///
+// graphr(fc(white) lcolor(white) ilcolor(white)  lwidth(thick) margin(r+5)) bgcolor(white) plotr(style(none) fc(white) lcolor(white) lwidth(thick))  ///
+// legend(off) ytitle("% of Total Applicants") ylabel(5 "5" 10 "10" 15 "15" 20 "20" 25 "25" 30 "30" 35 "35") saving(year2016, replace) title("2016")
+// 
+// gr hbar mrun if year_application == 2017 , over(nivel_label, sort(1) descending) asyvars showyvars ///
+// graphr(fc(white) lcolor(white) ilcolor(white)  lwidth(thick) margin(r+5)) bgcolor(white) plotr(style(none) fc(white) lcolor(white) lwidth(thick))  ///
+// legend(off) ytitle("% of Total Applicants") ylabel(5 "5" 10 "10" 15 "15" 20 "20" 25 "25" 30 "30" 35 "35") saving(year2017, replace) title("2017")
+//
+// gr hbar mrun if year_application == 2018 , over(nivel_label, sort(1) descending) asyvars showyvars ///
+// graphr(fc(white) lcolor(white) ilcolor(white)  lwidth(thick) margin(r+5)) bgcolor(white) plotr(style(none) fc(white) lcolor(white) lwidth(thick))  ///
+// legend(off) ytitle("% of Total Applicants") ylabel(5 "5" 10 "10" 15 "15" 20 "20" 25 "25" 30 "30" 35 "35") saving(year2018, replace) title("2018")
+//
+// gr hbar mrun if year_application == 2019 , over(nivel_label, sort(1) descending) asyvars showyvars ///
+// graphr(fc(white) lcolor(white) ilcolor(white)  lwidth(thick) margin(r+5)) bgcolor(white) plotr(style(none) fc(white) lcolor(white) lwidth(thick))  ///
+// legend(off) ytitle("% of Total Applicants") ylabel(5 "5" 10 "10" 15 "15" 20 "20" 25 "25" 30 "30" 35 "35") saving(year2019, replace ) title("2019")
+//
+// gr combine year2016.gph year2017.gph year2018.gph year2019.gph
+//
+// gr export "$pathFigures/applicants_bygrade2.png", as(png) replace  
+
+ 
+* ----------------------------------------
 * STATS GENERALES
 * ----------------------------------------
 // * --- applicants by region and year
