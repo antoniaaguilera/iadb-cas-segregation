@@ -112,6 +112,7 @@ save `sae2016_mat2017', replace
 *use "$pathData/intermediates/rendmat2018_prio2017.dta", clear
 use "$pathData/intermediates/rendmat2018_prio2018.dta", clear
 gen in_mat = 1
+
 merge 1:1 mrun using "$pathData/intermediates/sae_final_2017.dta"
 
 rename rbd rbd_matricula 
@@ -137,6 +138,7 @@ use "$pathData/intermediates/rendmat2019_prio2019.dta", clear
 gen in_mat = 1
 
 merge 1:1 mrun using "$pathData/intermediates/sae_final_2018.dta"
+
 rename rbd rbd_matricula 
 rename rbd_final rbd_asignado
 
@@ -158,9 +160,10 @@ save `sae2018_mat2019', replace
 * -------------------------------
 *use "$pathData/intermediates/rendmat2020_prio2019.dta", clear
 use "$pathData/intermediates/rendmat2020_prio2020.dta", clear
+gen in_mat = 1
+
 merge 1:1 mrun using "$pathData/intermediates/sae_final_2019.dta"
-gen in_sae = (_m==2|_m==3)
-gen in_mat = (_m==1|_m==3)
+
 rename rbd rbd_matricula 
 rename rbd_final rbd_asignado
 
@@ -229,6 +232,7 @@ replace prioritario_def = prioritario_sae if prioritario_def == .
 * -- reemplazar los que son distintos 
 br if prioritario_alu!=prioritario_sae&prioritario_sae!=.&prioritario_alu!=.
 replace prioritario_def = prioritario_sae if  prioritario_alu!=prioritario_sae&prioritario_sae!=.&prioritario_alu!=.
+replace prioritario_def = 0 if prioritario_def == .
 
 tab cod_reg year_application if prioritario_alu!=prioritario_sae&prioritario_sae!=.&prioritario_alu!=.
 order year* mrun etapa *nivel_* rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat origin
