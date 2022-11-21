@@ -235,7 +235,7 @@ tostring rbd_matricula, replace
    
 keep mrun etapa rbd* year_application
 
-gen asignado  = 1        if rbd_asignado != "sale-del-proceso" & rbd_asignado != "rechaza-en-regular" & rbd_asignado != "sin-asignacion"
+gen asignado  = 1        if rbd_asignado != .
 replace asignado = 0     if asignado == .
 keep if asignado == 1
 

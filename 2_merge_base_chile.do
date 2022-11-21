@@ -72,10 +72,13 @@ forvalues year=2016/2019 {
 	merge m:1 rbd using "$pathData/intermediates/rbd_region.dta" 
 	keep if _merge == 3 
 	drop _merge 
-	collapse (firstnm) cod_reg_rbd, by(mrun) 
+	collapse (firstnm) cod_reg_rbd cod_com_rbd, by(mrun) 
 	merge 1:1 mrun using "$pathData/intermediates/sae_applicants_`year'.dta" // tienen que pegar todos
 	drop _merge 
 	merge 1:1 mrun using "$pathData/intermediates/sae_respuesta_`year'.dta" // tienen que pegar todos
+	gen rbd_asignado = rbd_final if rbd_final != "sin-asignacion" & rbd_final != "rechaza-en-regular" & rbd_final != "sale-del-proceso"
+	destring rbd_asignado, replace
+	
 	drop _merge 
 	gen in_sae = 1
 	save "$pathData/intermediates/sae_final_`year'.dta", replace 
@@ -98,12 +101,11 @@ gen in_mat = 1
 
 merge 1:1 mrun using "$pathData/intermediates/sae_final_2016.dta"
 rename rbd rbd_matricula 
-rename rbd_final rbd_asignado
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat year*  origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year*  origin
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
 
 gen region_insae     = "only_entry" if  cod_reg_rbd == 12
 replace region_insae = "no" 	    if region_insae == ""
@@ -120,12 +122,11 @@ gen in_mat = 1
 merge 1:1 mrun using "$pathData/intermediates/sae_final_2017.dta", update
  
 rename rbd rbd_matricula 
-rename rbd_final rbd_asignado
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat year* origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
 
 gen region_insae     = "all_grades" if  cod_reg_rbd == 12
 replace region_insae = "only_entry" if inlist(cod_reg_rbd,1,4,10 )
@@ -144,12 +145,11 @@ gen in_mat = 1
 merge 1:1 mrun using "$pathData/intermediates/sae_final_2018.dta"
 
 rename rbd rbd_matricula 
-rename rbd_final rbd_asignado
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat year* origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
 
 gen region_insae     = "all_grades" if inlist(cod_reg, 1,4,10,12)
 replace region_insae = "only_entry" if cod_reg != 13 & region_insae == ""
@@ -169,12 +169,11 @@ gen in_mat = 1
 merge 1:1 mrun using "$pathData/intermediates/sae_final_2019.dta"
 
 rename rbd rbd_matricula 
-rename rbd_final rbd_asignado
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat year* origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
 
 gen region_insae     = "all_grades" if cod_reg != 13
 replace region_insae = "only_entry" if cod_reg == 13
@@ -193,24 +192,33 @@ append using `sae2018_mat2019'
 append using `sae2019_mat2020'
 
 replace year_admission = year_application+1
+ 
 * --- hardcode fix
 
 replace cod_reg_rbd = 6       if mrun == 15277388
 replace cod_com_alu = 6301    if mrun == 15277388
+replace cod_com_rbd = 6301    if mrun == 15277388
 replace cod_reg_rbd = 4       if mrun == 15346998
 replace cod_com_alu = 4101    if mrun == 15346998
+replace cod_com_rbd = 4101    if mrun == 15346998
 replace cod_reg_rbd = 10      if mrun == 17732121
 replace cod_com_alu = 10109   if mrun == 17732121
+replace cod_com_rbd = 10109   if mrun == 17732121
 replace cod_reg_rbd = 8       if mrun == 3805310
 replace cod_com_alu = 8108    if mrun == 3805310
+replace cod_com_rbd = 8108    if mrun == 3805310
 replace cod_reg_rbd = 13      if mrun == 9124802
 replace cod_com_alu = 13124   if mrun == 9124802
+replace cod_com_rbd = 13124   if mrun == 9124802
 replace cod_reg_rbd = 13      if mrun == 9472872
 replace cod_com_alu = 13121   if mrun == 9472872
+replace cod_com_rbd = 13121   if mrun == 9472872
 replace cod_reg_rbd = 13      if mrun == 16346173
 replace cod_com_alu = 13401   if mrun == 16346173
+replace cod_com_rbd = 13401   if mrun == 16346173
 replace cod_reg_rbd = 13      if mrun == 21409022
 replace cod_com_alu = 13111   if mrun == 21409022
+replace cod_com_rbd = 13111   if mrun == 21409022
 
 * -- gen years before policy implementation
 // fase 1: magallanes

@@ -396,5 +396,6 @@ forvalues year = 2016/2019 {
 	replace rbd_final       = "sin-asignacion" if rbd_final == ""
 	
 	drop _merge 
+	
 	save "$pathData/intermediates/sae_respuesta_`year'.dta", replace 
 }

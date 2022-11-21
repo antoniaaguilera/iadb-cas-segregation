@@ -17,54 +17,44 @@ global pathFigures "$pathMain/figures"
 global pathTables "$pathMain/tables"
  
 * --------------------------------------------------------------------------------
-* COLLAPSE DATA 
+* DUNCAN INDEX 
 * --------------------------------------------------------------------------------
 use "$pathData/outputs/sae1619_prio1720_mat1720.dta", clear 
- * - con base a nivel de estudiante se genera el indicador con duncan2
- * - construir el duncan con ambos rbd (asignacion y matricula)
- 
+drop if rbd_matricula == .
+
+* --- gen school variables 
+gen school_enrolled = rbd_matricula
+gen school_assigned = rbd_matricula 
+replace school_assigned = rbd_asignado   if rbd_asignado != .
 /*
-[13:23] Macarena Kutscher
-    by comuna: duncan2 rbd_sae prioritario_def, d(D)
-​[13:24] Macarena Kutscher
-    foreach region in `region' {​​
-local year 2015 2016 2017 2018 2019
-foreach year in `year'{​​
-use "$output/`region'_duncan_index_`year'.dta", clear
-drop if group20_mother12==.
-*recovering comunas codes
-levelsof cod_com_rbd, local(levels) 
-local ncom: word count `levels'
-matrix `region'= J(`ncom',1, .)
-matrix colname `region'= duncan2
-matrix rowname `region'= `levels'
-local i=1
-foreach l of local levels {​​
-local index group20_mother12
-foreach index in `index' {​​
-duncan2 rbd `index' if cod_com_rbd==`l', d(D)
-sum D
-matrix `region'[`i',1]=r(mean)
-drop D
-}​​
-local ++i
-}​​
+- school_enrolled has more missings than school_assigned because:
+	- school_enrolled missings are students that are present in the SAE db but not in the Enrollment db.
+	- school_assigned missings are students that are present in the Enrollment db but not in the SAE db, might be private school students.
+*/
 
-matrix list `region'
- 
- */
-collapse (firstnm) group region_insae cod_reg_rbd (mean) cod_nivel (sum) prioritario_def (count) total = mrun, by(year_application rbd_matricula)
-stop 
-gen pc_prio = prioritario_def/total*100
-sort rbd_matricula year_application
+* --- duncan index
+sort cod_com_rbd year_application
+by cod_com_rbd  year_application: duncan2 school_enrolled prioritario_def, d(D_enrolled) nobs(D_enrolled_N)
+by cod_com_rbd  year_application: duncan2 school_assigned prioritario_def, d(D_assigned) nobs(D_assigned_N)
 
-gen pre_treatment  = (region_insae == "no")
-gen post_treatment = (region_insae != "no")
+collapse (mean) prioritario_def (firstnm) cod_reg_rbd region_insae D_*, by(cod_com_rbd year_application)
 
-gen is_treated = (cod_reg_rbd == 12)
-replace is_treated = 1 if group == 2 & year_application == 2017
-replace is_treated = 1 if group == 3 & year_application == 2018
-replace is_treated = 1 if group == 4 & year_application == 2019
+* --- compare coefficients
+//tw (kdensity D_assigned)(kdensity D_enrolled)
 
+* --------------------------------------------------------------------------------
+* DIFFERENCE IN DIFFERENCE 
+* --------------------------------------------------------------------------------
+/*
+Cuando ya tienes en duncan para cada año y comuna, hay que correr un DinD. 
+Partamos con lo mas simple, donde el duncan es la variable dependiente y 
+agregando un efecto fijo de año y region (y errores estandar clusterizados 
+a nivel de region)
+*/
+gen is_insae = (region_insae != "no")
+*https://www.stata.com/new-in-stata/difference-in-differences-DID-DDD/#:~:text=Difference%20in%20differences%20(DID)%20offers,the%20name%20difference%20in%20differences.
+didregress (D_assigned) (is_insae), group(cod_reg_rbd) time(year_application)
 
-save "$pathData/outputs/for_did.dta", replace
+* --- 
+sum D_assigned if 
+*save "$pathData/outputs/for_did.dta", replace
