@@ -48,34 +48,34 @@ local sae_2019 "$pathData/inputs/SAE/SAE_2019"
 * -----------------------------------------
 * GET STOCK OF SCHOOLS PER YEAR WITH REGION 
 * -----------------------------------------
-forvalues year = 2016/2020 {
-  * --- matricula --- *
-  import delimited "`mat_`year''", clear
-  
-  keep rbd cod_reg_rbd cod_depe agno cod_com_rbd
-  duplicates drop rbd, force 
-  * --- fix cod_depe
-  gen dependencia     = 1 if inlist(cod_depe, 1, 2, 6) //estatal
-  replace dependencia = 2 if inlist(cod_depe, 3, 5) //subvencionado
-  replace dependencia = 3 if inlist(cod_depe, 4) //pagado
- 
-  tempfile region_`year'
-  save `region_`year'', replace 
-}
-
-* --- fix cod_depe
-use `region_2016', clear
-merge 1:1 rbd using `region_2017'
-drop _merge
-merge 1:1 rbd using `region_2018'
-drop _merge
-merge 1:1 rbd using `region_2019'
-drop _merge
-merge 1:1 rbd using `region_2020'
-drop _merge 
-
-duplicates report rbd 
-save "$pathData/intermediates/rbd_region.dta", replace 
+// forvalues year = 2016/2020 {
+//   * --- matricula --- *
+//   import delimited "`mat_`year''", clear
+//  
+//   keep rbd cod_reg_rbd cod_depe agno cod_com_rbd
+//   duplicates drop rbd, force 
+//   * --- fix cod_depe
+//   gen dependencia     = 1 if inlist(cod_depe, 1, 2, 6) //estatal
+//   replace dependencia = 2 if inlist(cod_depe, 3, 5) //subvencionado
+//   replace dependencia = 3 if inlist(cod_depe, 4) //pagado
+// 
+//   tempfile region_`year'
+//   save `region_`year'', replace 
+// }
+//
+// * --- fix cod_depe
+// use `region_2016', clear
+// merge 1:1 rbd using `region_2017'
+// drop _merge
+// merge 1:1 rbd using `region_2018'
+// drop _merge
+// merge 1:1 rbd using `region_2019'
+// drop _merge
+// merge 1:1 rbd using `region_2020'
+// drop _merge 
+//
+// duplicates report rbd 
+// save "$pathData/intermediates/rbd_region.dta", replace 
 
 
 * --------------------------------
@@ -208,7 +208,6 @@ save "$pathData/intermediates/rbd_region.dta", replace
 //   keep if cod_nivel == -1
 //   save "$pathData/intermediates/sae_applicants_`year'.dta", replace 
 // }
-  
 * -----------------
 * APPLICATIONS
 * -----------------
@@ -219,183 +218,210 @@ forvalues year = 2016/2019 {
   import delimited "`sae_`year''/C1_Postulaciones_etapa_regular_`year'_Admision_`admission_year'_PUBL.csv", clear
 
   cap rename nivel cod_nivel 
-  
-  keep mrun rbd cod_nivel
+
+  keep mrun rbd cod_nivel preferencia_postulante
   gen etapa = "regular"
- 
+  rename mrun applicants_reg
+  
   tempfile sae_regular_postulaciones_`year'
   save `sae_regular_postulaciones_`year'', replace
 
   * --- SAE - APPLICATIONS - COMPLEMENTARIO --- *
   import delimited "`sae_`year''/C2_Postulaciones_etapa_complementaria_`year'_Admision_`admission_year'_PUBL.csv", clear
   cap rename nivel cod_nivel
- 
-  keep mrun rbd cod_nivel
- 
+
+  keep mrun rbd cod_nivel preferencia_postulante
+
   gen etapa = "complementaria"
- 
+
   append using `sae_regular_postulaciones_`year''
- 
+
   duplicates report mrun
 
   gen year_application = `year'
   gen year_admission = `admission_year'
-  
+
   bys mrun: egen aux = mean(cod_nivel)
   drop if cod_nivel != aux
   keep if cod_nivel == -1
-  
+
   save "$pathData/intermediates/sae_applications_`year'.dta", replace 
 }
 
-* -----------------
-* SUPPLY
-* -----------------
+
+// * -----------------
+// * SUPPLY
+// * -----------------
+// forvalues year = 2016/2019 {
+// 	local admission_year = `year' + 1
+//  * -----------------
+//  * SCHOOLS - REGULAR
+//  * -----------------
+// 	import delimited "`sae_`year''/A1_Oferta_Establecimientos_etapa_regular_`year'_Admision_`admission_year'.csv", clear
+//	 
+// 	cap rename nivel cod_nivel
+// 	keep if cod_nivel == -1
+// 	collapse (firstnm) cod_nivel con_copago lat lon (sum) cupos_reg = cupos_totales vacantes_reg = vacantes , by(rbd)			 
+//	
+// 	tempfile sae_regular_oferta_`year'
+// 	save `sae_regular_oferta_`year'', replace 
+//
+// * ------------------------
+// * SCHOOLS - COMPLEMENTARIO
+// * ------------------------
+// 	import delimited "`sae_`year''/A2_Oferta_Establecimientos_etapa_complementaria_`year'_Admision_`admission_year'.csv", clear
+// 	cap rename nivel cod_nivel
+// 	keep if cod_nivel == -1
+// 	collapse (firstnm) cod_nivel con_copago lat lon (sum)  cupos_comp = cupos_totales vacantes_comp = vacantes  , by(rbd)			 				 
+//
+//     merge 1:1 rbd using `sae_regular_oferta_`year''
+//
+// 	gen etapa     = "reg"       if _m == 2
+// 	replace etapa = "comp"      if _m == 1
+// 	replace etapa = "reg+comp"  if _m == 3
+//
+// 	drop _merge
+// 	duplicates report rbd
+//
+// 	gen year_application = `year'
+// 	gen year_admission = `admission_year'
+//	
+// 	if year_application>=2017 {
+// 		replace lat = subinstr(lat,",",".",.)
+// 		replace lon = subinstr(lon,",",".",.)
+// 		destring lat lon, replace
+// 	}
+//   save "$pathData/intermediates/sae_oferta_`year'.dta", replace 
+// }
+//
+//
+//
+// * -----------------
+// * ASSIGNMENT
+// * -----------------
+// forvalues year = 2016/2019 {
+// 	local admission_year = `year' + 1
+// * --------------------
+// * ASSIGNMENT - REGULAR
+// * --------------------
+// 	import delimited "$pathData/inputs/SAE/SAE_`year'/D1_Resultados_etapa_regular_`year'_Admision_`admission_year'_PUBL.csv", clear charset(utf-8)
+// 	cap rename nivel cod_nivel
+//	
+// 	cap rename respuesta_postulante_post_lista_ respuesta_post_lista
+// 	cap rename * *_reg
+// 	rename mrun_reg mrun
+//
+// 	tempfile sae_regular_resultados
+// 	save `sae_regular_resultados', replace
+// 
+// * ---------------------------
+// * ASSIGNMENT - COMPLEMENTARIO
+// * ---------------------------
+// 	import delimited "$pathData/inputs/SAE/SAE_`year'/D2_Resultados_etapa_complementaria_`year'_Admision_`admission_year'_PUBL.csv", clear charset(utf-8)
+// 	cap rename nivel cod_nivel
+// 	rename * *_comp
+// 	rename mrun_comp mrun
+//	
+//	
+// 	merge 1:1 mrun using `sae_regular_resultados'
+//	
+// 	gen cod_nivel = cod_nivel_comp 
+//     replace cod_nivel = cod_nivel_reg   if cod_nivel == .
+//     drop cod_nivel_reg cod_nivel_comp
+//  
+//     keep if cod_nivel == -1
+// 	order mrun *_reg *_comp
+//
+// 	gen rbd_final = ""
+// 	gen cod_curso_final = ""
+// 	gen asignado_comp = 0
+// 	cap destring respuesta_post_lista_reg, replace
+// 	cap tostring rbd_admitido_reg rbd_admitido_comp, replace
+// * ---------------------------
+// * ASSIGNMENT - RESUPUESTAS
+// * --------------------------- 
+// 	cap gen respuesta_post_lista_reg = . if `year'<=2017
+// 	* --- estudiantes que acepta en etapa regular
+// 	tab _merge if respuesta_postulante_reg == 1 //no hay ninguno que acepte y que estén en complementaria
+// 	replace rbd_final = rbd_admitido_reg  if respuesta_postulante_reg == 1
+//	
+// 	* --- estudiantes que acepta y espera en etapa regular
+// 	tab _merge if respuesta_postulante_reg == 2 //no hay ninguno que acepte y que estén en complementaria
+// 	cap tab respuesta_post_lista_reg if respuesta_postulante_reg == 2 //respuesta post lista sólo ==1
+// 	* acepta lista de espera
+// 	replace rbd_final       = rbd_admitido_post_resp_reg   if respuesta_postulante_reg == 2 & respuesta_post_lista_reg == 1
+//	
+// 	* --- estudiantes estudiantes que rechazan
+// 	tab _merge if respuesta_postulante_reg == 3
+// 	* los que están sólo en regular
+// 	replace rbd_final       = "rechaza-en-regular"    if respuesta_postulante_reg == 3 & _merge == 2
+// 	* los que están en ambas, si rechaza en primera está obligado a aceptar en complementaria
+// 	replace rbd_final       = rbd_admitido_comp       if respuesta_postulante_reg == 3 & _merge == 3
+// 	replace asignado_comp   = 1  if respuesta_postulante_reg == 3 & _merge == 3
+//
+// 	* --- estudiantes que rechazan y espera
+// 	tab _merge if respuesta_postulante_reg == 4 //no obs
+//
+// 	* --- estudiantes que no responden
+// 	tab _merge if respuesta_postulante_reg == 5
+// 	replace rbd_final       = rbd_admitido_reg       if respuesta_postulante_reg == 5
+//	
+// 	* --- estudiantes que están obligados a esperar
+// 	tab _merge if respuesta_postulante_reg == 6
+// 	tab respuesta_post_lista_reg if respuesta_postulante_reg == 6 & _merge == 2
+// 	tab respuesta_post_lista_reg if respuesta_postulante_reg == 6 & _merge == 3
+// 	* espera, se le asigna y acepta
+// 	replace rbd_final       = rbd_admitido_post_resp_reg if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 1
+// 	* espera, se le asigna y rechaza
+// 	replace rbd_final       = "sale-del-proceso"         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 2
+// 	replace rbd_final       = rbd_admitido_comp          if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 3
+// 	replace asignado_comp   = 1                          if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 3
+// 	* obligado a esperar y sin respuesta post lista
+// 	replace rbd_final       = rbd_admitido_post_resp_reg if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 5 & _merge == 2
+// 	* obligado a esperar y sin asignacion
+// 	replace rbd_final       = "sin-asignacion"         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 6 & _merge == 2
+// 	replace rbd_final       = rbd_admitido_comp         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 6 & _merge == 3
+// 	replace asignado_comp   = 1                         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 6 & _merge == 3
+//
+// 	* --- estudiantes que salen del proceso
+// 	replace rbd_final       = "sale-del-proceso"  if respuesta_postulante_reg == 7
+//	
+// 	count if rbd_final == "" & _merge == 1 //
+// 	count if rbd_final == "" & _merge == 2 //
+// 	count if rbd_final == "" & _merge == 3 // 
+//
+// 	replace rbd_final = rbd_admitido_comp                  if _merge == 1
+//
+// 	replace rbd_final = subinstr(rbd_final, " ", "", .)
+//
+// 	replace rbd_final       = "sin-asignacion" if rbd_final == ""
+//	
+// 	drop _merge 
+//	
+// 	save "$pathData/intermediates/sae_respuesta_`year'.dta", replace 
+// }
+
+* -----------------------------------------
+* SCHOOL QUALITY DATA
+* -----------------------------------------
+
 forvalues year = 2016/2019 {
-	local admission_year = `year' + 1
- * -----------------
- * SCHOOLS - REGULAR
- * -----------------
-	import delimited "`sae_`year''/A1_Oferta_Establecimientos_etapa_regular_`year'_Admision_`admission_year'.csv", clear
+	import excel "$pathData/inputs/quality/cdb`year'/CDB`year'.xlsx", clear first
 	 
-	cap rename nivel cod_nivel
-	keep if cod_nivel == -1
-	collapse (firstnm) cod_nivel con_copago lat lon (sum) cupos_totales vacantes , by(rbd)			 
+	rename CategoríaDesempeño`year' quality_cat
+	rename RBD rbd 
 	
-	tempfile sae_regular_oferta_`year'
-	save `sae_regular_oferta_`year'', replace 
-
-* ------------------------
-* SCHOOLS - COMPLEMENTARIO
-* ------------------------
-	import delimited "`sae_`year''/A2_Oferta_Establecimientos_etapa_complementaria_`year'_Admision_`admission_year'.csv", clear
-	cap rename nivel cod_nivel
-	keep if cod_nivel == -1
-	collapse (firstnm) cod_nivel con_copago lat lon (sum) cupos_totales vacantes , by(rbd)			 				 
- 
-    merge 1:1 rbd using `sae_regular_oferta_`year''
-
-	gen etapa     = "reg"       if _m == 2
-	replace etapa = "comp"      if _m == 1
-	replace etapa = "reg+comp"  if _m == 3
-
-	drop _merge
-	duplicates report rbd
-
+	keep rbd quality_cat
 	gen year_application = `year'
-	gen year_admission = `admission_year'
 	
-	if year_application>=2017 {
-		replace lat = subinstr(lat,",",".",.)
-		replace lon = subinstr(lon,",",".",.)
-		destring lat lon, replace
-	}
-  save "$pathData/intermediates/sae_oferta_`year'.dta", replace 
+	tempfile cat_`year'
+	save `cat_`year'', replace 
+	
 }
 
+use `cat_2016', clear 
+append using `cat_2017'
+append using `cat_2018'
+append using `cat_2019'
 
-
-* -----------------
-* ASSIGNMENT
-* -----------------
-forvalues year = 2016/2019 {
-	local admission_year = `year' + 1
-* --------------------
-* ASSIGNMENT - REGULAR
-* --------------------
-	import delimited "$pathData/inputs/SAE/SAE_`year'/D1_Resultados_etapa_regular_`year'_Admision_`admission_year'_PUBL.csv", clear charset(utf-8)
-	cap rename nivel cod_nivel
-	
-	cap rename respuesta_postulante_post_lista_ respuesta_post_lista
-	cap rename * *_reg
-	rename mrun_reg mrun
-
-	tempfile sae_regular_resultados
-	save `sae_regular_resultados', replace
- 
-* ---------------------------
-* ASSIGNMENT - COMPLEMENTARIO
-* ---------------------------
-	import delimited "$pathData/inputs/SAE/SAE_`year'/D2_Resultados_etapa_complementaria_`year'_Admision_`admission_year'_PUBL.csv", clear charset(utf-8)
-	cap rename nivel cod_nivel
-	rename * *_comp
-	rename mrun_comp mrun
-	
-	
-	merge 1:1 mrun using `sae_regular_resultados'
-	
-	gen cod_nivel = cod_nivel_comp 
-    replace cod_nivel = cod_nivel_reg   if cod_nivel == .
-    drop cod_nivel_reg cod_nivel_comp
-  
-    keep if cod_nivel == -1
-	order mrun *_reg *_comp
-
-	gen rbd_final = ""
-	gen cod_curso_final = ""
-	gen asignado_comp = 0
-	cap destring respuesta_post_lista_reg, replace
-	cap tostring rbd_admitido_reg rbd_admitido_comp, replace
-* ---------------------------
-* ASSIGNMENT - RESUPUESTAS
-* --------------------------- 
-	cap gen respuesta_post_lista_reg = . if `year'<=2017
-	* --- estudiantes que acepta en etapa regular
-	tab _merge if respuesta_postulante_reg == 1 //no hay ninguno que acepte y que estén en complementaria
-	replace rbd_final = rbd_admitido_reg  if respuesta_postulante_reg == 1
-	
-	* --- estudiantes que acepta y espera en etapa regular
-	tab _merge if respuesta_postulante_reg == 2 //no hay ninguno que acepte y que estén en complementaria
-	cap tab respuesta_post_lista_reg if respuesta_postulante_reg == 2 //respuesta post lista sólo ==1
-	* acepta lista de espera
-	replace rbd_final       = rbd_admitido_post_resp_reg   if respuesta_postulante_reg == 2 & respuesta_post_lista_reg == 1
-	
-	* --- estudiantes estudiantes que rechazan
-	tab _merge if respuesta_postulante_reg == 3
-	* los que están sólo en regular
-	replace rbd_final       = "rechaza-en-regular"    if respuesta_postulante_reg == 3 & _merge == 2
-	* los que están en ambas, si rechaza en primera está obligado a aceptar en complementaria
-	replace rbd_final       = rbd_admitido_comp       if respuesta_postulante_reg == 3 & _merge == 3
-	replace asignado_comp   = 1  if respuesta_postulante_reg == 3 & _merge == 3
-
-	* --- estudiantes que rechazan y espera
-	tab _merge if respuesta_postulante_reg == 4 //no obs
-
-	* --- estudiantes que no responden
-	tab _merge if respuesta_postulante_reg == 5
-	replace rbd_final       = rbd_admitido_reg       if respuesta_postulante_reg == 5
-	
-	* --- estudiantes que están obligados a esperar
-	tab _merge if respuesta_postulante_reg == 6
-	tab respuesta_post_lista_reg if respuesta_postulante_reg == 6 & _merge == 2
-	tab respuesta_post_lista_reg if respuesta_postulante_reg == 6 & _merge == 3
-	* espera, se le asigna y acepta
-	replace rbd_final       = rbd_admitido_post_resp_reg if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 1
-	* espera, se le asigna y rechaza
-	replace rbd_final       = "sale-del-proceso"         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 2
-	replace rbd_final       = rbd_admitido_comp          if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 3
-	replace asignado_comp   = 1                          if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 3 & _merge == 3
-	* obligado a esperar y sin respuesta post lista
-	replace rbd_final       = rbd_admitido_post_resp_reg if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 5 & _merge == 2
-	* obligado a esperar y sin asignacion
-	replace rbd_final       = "sin-asignacion"         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 6 & _merge == 2
-	replace rbd_final       = rbd_admitido_comp         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 6 & _merge == 3
-	replace asignado_comp   = 1                         if respuesta_postulante_reg == 6 & respuesta_post_lista_reg == 6 & _merge == 3
-
-	* --- estudiantes que salen del proceso
-	replace rbd_final       = "sale-del-proceso"  if respuesta_postulante_reg == 7
-	
-	count if rbd_final == "" & _merge == 1 //
-	count if rbd_final == "" & _merge == 2 //
-	count if rbd_final == "" & _merge == 3 // 
-
-	replace rbd_final = rbd_admitido_comp                  if _merge == 1
-
-	replace rbd_final = subinstr(rbd_final, " ", "", .)
-
-	replace rbd_final       = "sin-asignacion" if rbd_final == ""
-	
-	drop _merge 
-	
-	save "$pathData/intermediates/sae_respuesta_`year'.dta", replace 
-}
+save "$pathData/intermediates/school_quality.dta", replace

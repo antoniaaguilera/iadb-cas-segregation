@@ -228,66 +228,162 @@ use "$pathData/outputs/sae1619_prio1720_mat1720.dta", clear
 * ----------------------------------------
 * ASIGNACIÓN VS MATRÍCULA
 * ----------------------------------------
+// 	preserve 
+//
+// 	keep if in_sae == 1
+// 	tostring rbd_matricula, replace 
+//	   
+// 	keep mrun etapa rbd* year_application
+//
+// 	gen asignado  = 1        if rbd_asignado != .
+// 	replace asignado = 0     if asignado == .
+// 	keep if asignado == 1
+//
+// 	gen same_school = (rbd_asignado == rbd_matricula)
+//
+// 	collapse (sum) asignado , by(same_school year_application)
+// 	gen id = _n 
+// 	reshape wide asignado, i(id) j(same_school)
+// 	collapse (firstnm) asignado0 asignado1, by(year_application)
+//
+// 	gen total = asignado0 +  asignado1
+// 	gen pc_asignado0 = round(asignado0/total*100, 0.1)
+// 	gen pc_asignado1 = round(asignado1/total*100, 0.1)
+//
+// 	local pc0_2016 : di pc_asignado0[1]
+// 	local pc1_2016 : di pc_asignado1[1]
+// 	local pc0_2017 : di pc_asignado0[2]
+// 	local pc1_2017 : di pc_asignado1[2]
+// 	local pc0_2018 : di pc_asignado0[3]
+// 	local pc1_2018 : di pc_asignado1[3]
+// 	local pc0_2019 : di pc_asignado0[4]
+// 	local pc1_2019 : di pc_asignado1[4]
+//
+// 	file open  sae_assingment using "$pathTables/assignment_consistency.tex", write replace
+// 	file write sae_assingment "\begin{table}[ht!]" _n
+// 	file write sae_assingment "\centering"_n
+// 	file write sae_assingment "\caption{Enrollment consistency among assigned SAS applicants}"_n
+// 	file write sae_assingment "\resizebox{13cm}{!}{"_n
+// 	file write sae_assingment "\begin{tabular}{l|cccc}"_n
+// 	file write sae_assingment "                                   & \multicolumn{4}{c}{Assigned applicants}   \\ "_n
+// 	file write sae_assingment "                                   &  2016       & 2017       & 2018       & 2019       \\ \hline "_n
+// 	file write sae_assingment "  Enrolled in assigned school (\%)     &  `pc1_2016' & `pc1_2017' & `pc1_2018' & `pc1_2019' \\ "_n
+// 	file write sae_assingment "  Not enrolled in assigned school (\%)  &  `pc0_2016' & `pc0_2017' & `pc0_2018' & `pc0_2019'   \\ \hline"_n
+// 	file write sae_assingment "\end{tabular} "_n
+// 	file write sae_assingment "}"_n
+// 	file write sae_assingment "\label{tab:assignment_consistency}"_n
+// 	file write sae_assingment "\end{table} "_n
+// 	file close sae_assingment
+// 	restore 
+
+* ----------------------------------------
+* PATRONES ESTUDIANTES PRIORITARIOS
+* ----------------------------------------
+
+* --- generate supply of schools
+use "$pathData/outputs/sae_oferta_final.dta", clear 
+
+rename lat lat_school 
+rename lon lon_school
+
+merge 1:1 rbd year_application using "$pathData/intermediates/school_quality.dta"
+drop if _m == 2
+drop _m 
+ 
+tempfile supply
+save `supply', replace 
+
+* --- generate demand for schools
+use "$pathData/outputs/sae_applications_final.dta", clear 
+tab year_application
+
+collapse (count) applicants = mrun, by(rbd year_application etapa )
+gen id = _n
+
+reshape wide applicants@ , i(id) j(etapa) string
+ 
+rename applicantsregular applicants_reg
+rename applicantscomplementaria applicants_comp
+
+collapse (firstnm) applicants_reg applicants_comp, by(rbd year_application)
+
+replace applicants_reg  = 0 if applicants_reg == .
+replace applicants_comp = 0 if applicants_comp == .
+
+* -- merge supply and demand
+merge 1:1 rbd year_application using `supply'
+keep if _m == 3
+drop _m
+
+tempfile supply_demand
+save `supply_demand', replace 
+
+* --- merge applications with student characteristics
+use "$pathData/outputs/sae_applications_final.dta", clear 
+
+merge m:1 mrun year_application using "$pathData/outputs/sae1619_prio1720_mat1720.dta", keepusing(prioritario_def prioritario_sae lat_con_error lon_con_error cod_reg_rbd group)
+keep if _m == 3
+drop _m
+rename *_con_error *_applicant
+
+* --- merge applications with school characteristics
+merge m:1 rbd year_application using `supply_demand'
+drop _m
+
+keep mrun rbd year_application cod_depe prioritario_def applicants* con_copago lat* lon* cupos_* vacantes_* quality_cat preferencia_postulante cod_reg_rbd group
+
+sort year_application mrun preferencia_postulante, stable
+
+* -- create variables to compare
+foreach etapa in reg comp {
+	gen is_overdemanded_`etapa'    = (applicants_`etapa' > vacantes_`etapa')
+	gen isnot_overdemanded_`etapa' = (applicants_`etapa' <= vacantes_`etapa')
+	gen demand_excess_`etapa'      = (applicants_`etapa'- vacantes_`etapa')
+	gen demand_ratio_`etapa'	   = applicants_`etapa' / vacantes_`etapa'
+
+}
+* --- demanda 
+tw (kdensity demand_ratio_reg if prioritario_def == 1 & demand_ratio_reg<=40, lwidth(0.5))(kdensity demand_ratio_reg if prioritario_def == 0 &demand_ratio_reg<=40, lwidth(0.5)), ///
+graphr(fc(white) lcolor(white) ilcolor(white)  lwidth(thick) margin(r+5)) bgcolor(white) plotr(style(none) fc(white) lcolor(white) lwidth(thick)) ///
+legend(order(1 "Disadvantaged" 2 "Not Disadvantaged") size(4)) xtitle("Applicants-to-Seat ratio") ytitle("")
+
+gr export "$pathFigures/disadvantaged_comparison_demand.png", as(png) replace  
+ 
+* --- distance distribution
+geodist lat_school lon_school lat_applicant lon_applicant , g(distance)
+tw (kdensity distance if prioritario_def == 1 & distance <=10, lwidth(0.5))(kdensity distance if prioritario_def == 0 & distance <=10, lwidth(0.5)), ///
+graphr(fc(white) lcolor(white) ilcolor(white)  lwidth(thick) margin(r+5)) bgcolor(white) plotr(style(none) fc(white) lcolor(white) lwidth(thick)) ///
+legend(order(1 "Disadvantaged" 2 "Not Disadvantaged") size(4)) xtitle("Distance (km)") ytitle("")
+
+gr export "$pathFigures/disadvantaged_comparison_distance.png", as(png) replace  
+ 
+* --- calidad del EE 
+replace quality_cat = "HIGH" if quality_cat == "ALTO"
+replace quality_cat = "MED-LOW" if quality_cat == "MEDIO-BAJO (NUEVO)"
+replace quality_cat = "MED-LOW" if quality_cat == "MEDIO-BAJO"
+replace quality_cat = "MEDIUM"  if quality_cat == "MEDIO"
+replace quality_cat = "INSUFFICIENT"  if quality_cat == "INSUFICIENTE"
+
 preserve 
 
-keep if in_sae == 1
-tostring rbd_matricula, replace 
-   
-keep mrun etapa rbd* year_application
+collapse (count) mrun, by(quality_cat prioritario_def)
+drop if quality_cat == ""
+drop if quality_cat == "SIN CATEGORIA: BAJA MATRICULA"
+drop if quality_cat == "SIN CATEGORIA: FALTA DE INFORMACIÓN"
 
-gen asignado  = 1        if rbd_asignado != .
-replace asignado = 0     if asignado == .
-keep if asignado == 1
+bys quality_cat: egen total = sum(mrun)
+gen pc_quality = round(mrun/total*100, 0.1)
 
-gen same_school = (rbd_asignado == rbd_matricula)
+* - SORT
+gen aux  = 1      if quality_cat == "HIGH"
+replace aux = 2   if quality_cat == "MEDIUM"
+replace aux = 3   if quality_cat == "MED-LOW"
+replace aux = 4   if quality_cat == "INSUFFICIENT"
 
-collapse (sum) asignado , by(same_school year_application)
-gen id = _n 
-reshape wide asignado, i(id) j(same_school)
-collapse (firstnm) asignado0 asignado1, by(year_application)
+gr hbar pc_quality , over(prioritario_def) over(quality_cat, sort(aux)) blabel(pc_quality) asyvars showyvars stack ///
+graphr(fc(white) lcolor(white) ilcolor(white)  lwidth(thick) margin(r+5)) bgcolor(white) plotr(style(none) fc(white) lcolor(white) lwidth(thick)) ///
+legend(order(1 "Disadvantaged" 2 "Not Disadvantaged") size(4)) ytitle("Percent")
 
-gen total = asignado0 +  asignado1
-gen pc_asignado0 = round(asignado0/total*100, 0.1)
-gen pc_asignado1 = round(asignado1/total*100, 0.1)
+gr export "$pathFigures/disadvantaged_comparison_quality.png", as(png) replace  
 
-local pc0_2016 : di pc_asignado0[1]
-local pc1_2016 : di pc_asignado1[1]
-local pc0_2017 : di pc_asignado0[2]
-local pc1_2017 : di pc_asignado1[2]
-local pc0_2018 : di pc_asignado0[3]
-local pc1_2018 : di pc_asignado1[3]
-local pc0_2019 : di pc_asignado0[4]
-local pc1_2019 : di pc_asignado1[4]
-
-file open  sae_assingment using "$pathTables/assignment_consistency.tex", write replace
-file write sae_assingment "\begin{table}[ht!]" _n
-file write sae_assingment "\centering"_n
-file write sae_assingment "\caption{Enrollment consistency among assigned SAS applicants}"_n
-file write sae_assingment "\resizebox{13cm}{!}{"_n
-file write sae_assingment "\begin{tabular}{l|cccc}"_n
-file write sae_assingment "                                   & \multicolumn{4}{c}{Assigned applicants}   \\ "_n
-file write sae_assingment "                                   &  2016       & 2017       & 2018       & 2019       \\ \hline "_n
-file write sae_assingment "  Enrolled in assigned school (\%)     &  `pc1_2016' & `pc1_2017' & `pc1_2018' & `pc1_2019' \\ "_n
-file write sae_assingment "  Not enrolled in assigned school (\%)  &  `pc0_2016' & `pc0_2017' & `pc0_2018' & `pc0_2019'   \\ \hline"_n
-file write sae_assingment "\end{tabular} "_n
-file write sae_assingment "}"_n
-file write sae_assingment "\label{tab:assignment_consistency}"_n
-file write sae_assingment "\end{table} "_n
-file close sae_assingment
-restore 
-
-
-/*
-nov18 
-- actualizar estad desc con prioritario_def :falta grafico por dependencia 
-- definir indicador socioeconómico (check) y zona geográfica
-	- potencialmente definición de mercados educacionales
-- histograma de como quedan los prioritarios por comuna
-	- ver si hay lugares donde hayan pocos alumnos, para sacarlos de la muestra 
-- FALTA HACER EL DUNCAN Y EL HIST
-*/
-
-
-
-
-
+restore

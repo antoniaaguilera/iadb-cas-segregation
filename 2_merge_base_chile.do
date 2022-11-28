@@ -9,11 +9,6 @@ la información de la institución dónde se encuentra matriculado más
 ================================================================================
 */
 
-/*
-Decisiones/Comentarios:
-- conservé la primera región para aquellos alumnos que tenían postulaciones a colegios en más de una región
-- se caen muchas obs al ocupar prioritarios del mismo año SAE, probablemente porque no muchos kinder están
-*/
 * --------------------------------------------------------------------------------
 * SET PATHS
 * --------------------------------------------------------------------------------
