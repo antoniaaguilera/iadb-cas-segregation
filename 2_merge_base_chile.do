@@ -23,7 +23,7 @@ append using "$pathData/intermediates/sae_oferta_2017.dta"
 append using "$pathData/intermediates/sae_oferta_2018.dta"
 append using "$pathData/intermediates/sae_oferta_2019.dta"
 
-merge m:1 rbd using "$pathData/intermediates/rbd_region.dta"
+merge m:1 rbd using "$pathData/intermediates/rbd_region.dta", keepusing(cod_reg_rbd cod_com_rbd cod_depe)
 keep if _merge == 3 
 drop _merge
 
@@ -99,8 +99,8 @@ rename rbd rbd_matricula
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year*  origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year*  origin cod_depe
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin cod_depe
 
 gen region_insae     = "only_entry" if  cod_reg_rbd == 12
 replace region_insae = "no" 	    if region_insae == ""
@@ -120,8 +120,8 @@ rename rbd rbd_matricula
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin cod_depe
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin cod_depe
 
 gen region_insae     = "all_grades" if  cod_reg_rbd == 12
 replace region_insae = "only_entry" if inlist(cod_reg_rbd,1,4,10 )
@@ -143,8 +143,8 @@ rename rbd rbd_matricula
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin cod_depe
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin cod_depe
 
 gen region_insae     = "all_grades" if inlist(cod_reg, 1,4,10,12)
 replace region_insae = "only_entry" if cod_reg != 13 & region_insae == ""
@@ -167,8 +167,8 @@ rename rbd rbd_matricula
 
 replace cod_nivel = -1 if cod_ense == 10 & cod_grado == 4
 
-keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin
-order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin
+keep mrun etapa cod_nivel  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat year* origin cod_depe
+order year* mrun cod_nivel etapa  rbd_asignado  rbd_matricula asignado_comp es_mujer prioritario* preferente* lat* lon* criterio_sep convenio_sep ee_gratuito ben_sep rural_rbd cod_com_alu nom_com_alu cod_reg_rbd cod_com_rbd in_sae in_mat origin cod_depe
 
 gen region_insae     = "all_grades" if cod_reg != 13
 replace region_insae = "only_entry" if cod_reg == 13
